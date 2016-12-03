@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 import argparse
 import sys
 import os
@@ -56,16 +57,16 @@ if __name__ == '__main__':
         folders = ['balance_sheet', 'comprehensive_income', 'cash_flow']
         
         # parse the fundamental data after 2013
-        '''
+        
         for d in folders:
-            if os.path.isdir('data/' + d + '2013'):
+            if os.path.isdir('data/' + d + '2013') == False:
                 os.mkdir('data/' + d + '2013')
 
         for s in stocks:
             print('get fundamental 2013~ for stock ' + s)
-            fileNames = [f + '2013/s' + s + '.csv' for f in folders]
+            fileNames = ['data/' + f + '2013/s' + s + '.csv' for f in folders]
             getFundamental(s, fileNames)
-        '''
+        
 
         # parse the fundamental data before 2013
         for d in folders:
@@ -74,11 +75,10 @@ if __name__ == '__main__':
 
         for s in stocks:
             print('get fundamental ~2012 for stock ' + s)
-            fileNames = [f + '2012/s' + s + '.csv' for f in folders]
+            fileNames = ['data/' + f + '2012/s' + s + '.csv' for f in folders]
             getBalanceSheet(s, fileNames[0])
             getComprehensiveIncome(s, fileNames[1])
             getCashFlow(s, fileNames[2])
-
 
 
 
