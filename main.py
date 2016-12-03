@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     if args.operation == 'initial':
 
-        if os.path.isdir('data')
+        if os.path.isdir('data') == False:
             os.mkdir('data')
 
         tradingStockListDir = 'data/trading_stock_list.csv'
@@ -58,7 +58,7 @@ if __name__ == '__main__':
         # parse the fundamental data after 2013
         '''
         for d in folders:
-            if os.path.isdir('data/' + d + '2013')
+            if os.path.isdir('data/' + d + '2013'):
                 os.mkdir('data/' + d + '2013')
 
         for s in stocks:
@@ -69,8 +69,8 @@ if __name__ == '__main__':
 
         # parse the fundamental data before 2013
         for d in folders:
-            if os.path.isdir('data/' + d + '2012')
-                os.mkdir('data/' + '2012')
+            if os.path.isdir('data/' + d + '2012') == False:
+                os.mkdir('data/' + d + '2012')
 
         for s in stocks:
             print('get fundamental ~2012 for stock ' + s)
