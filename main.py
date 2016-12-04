@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 import argparse
 import sys
 import os
@@ -76,7 +77,6 @@ if __name__ == '__main__':
             getBalanceSheet(s, fileNames[0])
             getComprehensiveIncome(s, fileNames[1])
             getCashFlow(s, fileNames[2])
-
 
 
 
