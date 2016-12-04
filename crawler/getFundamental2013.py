@@ -4,12 +4,24 @@ import pandas as pd
 import datetime
 import time
 import random
+import numpy
+import re
 
 def refineDf(df): # todo: move this function to utility
+
+    # we only need the target season
     df = df.drop(df.columns[list(range(2, len(df.columns)))], axis=1)
+
+    # remove the rows with null elements
     df = df.dropna()
+
+    # transpose the table
     dft = df.T
+
+    # set column names to the first column of df
     dft.columns = df[0]
+
+    # remove the original column names
     dft = dft.drop(0, axis=0)
     
     return dft
@@ -17,10 +29,12 @@ def refineDf(df): # todo: move this function to utility
 
 def getStatement(s, year, season):
 
+    # convert all the integer or string to string
     s = str(s)
     year = str(year)
     season = str(season)
 
+    # fetch the data
     req = requests.post('http://mops.twse.com.tw/server-java/t164sb01', data = {
         'step':'1',
         'DEBUG':'',
@@ -29,27 +43,64 @@ def getStatement(s, year, season):
         'SSEASON':season,
         'REPORT_ID':'C'
         })
-    empty = pd.DataFrame()
 
+    #
+    # check whether the data is fetched successfully
+    #
+    empty = pd.DataFrame()
+    
+    # check the status of connection
     if req.status_code != 200:
         print('**ERROR: cannot obtain fundamental for stock ' + s + ' year&season: ' + year + ' ' + season)
         return empty, empty, empty
 
     req.encoding = 'big5'
     
+    # check the table is obtained
     tables = pd.read_html(req.text)
 
     if len(tables) == 1:
         print('**WARRN: cannot obtain fundamental for stock ' + s + ' year&season: ' + year + ' ' + season)
+        print(req.text)
         return empty, empty, empty
-
+    #
+    # refine the tables
+    #
     df1 = refineDf(tables[1])
     df2 = refineDf(tables[2])
     df3 = refineDf(tables[3])
+    
+    #
+    # find public date
+    #
 
-    season2Date = ['', '05/30', '08/31', '11/29', '3/31']
-    season2Year = ['', year, year, year, str(int(year)+1)]
-    dateStr = season2Year[int(season)] + '/'+season2Date[int(season)]
+    # obtain the sub-string of website
+    idx = req.text.find('通過財報之日期及程序')
+    dateStr = req.text[idx:idx+500]
+
+    # obtain a smaller string of subStr
+    posYear = dateStr.find('年')
+    assert(posYear != -1)
+    dateStr = dateStr[posYear - 10: posYear + 10]
+
+    # extract the date
+    ch2int = {'○': 0, '零': 0, '十': 1, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9}
+    for key, val in ch2int.items():
+        dateStr = dateStr.replace(key, str(val)) 
+    
+    numbers = re.sub("\D", ' ', dateStr).split()
+
+    if int(numbers[0]) < 200:
+        numbers[0] = str(int(numbers[0]) + 1911)
+
+    if len(numbers[2]) == 3:
+        numbers[2] = numbers[2][0] + numbers[2][2]
+
+    # build the date
+    dateStr = numbers[0] + '/' + numbers[1] + '/' + numbers[2]
+
+    print('date: ' + dateStr)
+
     df1['date'] = pd.Series([dateStr],index=df1.index)
     df2['date'] = pd.Series([dateStr],index=df2.index)
     df3['date'] = pd.Series([dateStr],index=df3.index)
@@ -60,31 +111,45 @@ def checkDuplicate(df): # todo: move this function to utility
     
     duplicateName = []
     for idx, r in enumerate(df):
-        cnt = 0
-        for e in df:
+        for e in df.columns[idx+1:]:
             if(r == e):
-                cnt += 1
-        if (cnt > 1):
-            duplicateName.append(r)
+                duplicateName.append(r)
 
     for r in duplicateName:
-        dd = df[r]
-        dd.columns = list(range(0,len(dd.columns)))
-        if 1 != len(set(dd.T.values[0])):
-            print('**WARRN: duplicate is reduced: ' + r)
-            print(dd)
+        print('**WARRN: duplicate column names')
+        print(df[r])
+
+def row2Refine(row):
+
+    idxs = numpy.where(row.columns.values == '繼續營業單位淨利（淨損）')[0]
+    if len(idxs) == 0 or len(idxs) == 2:
+        typeName = ['基本','稀釋']
+        for idx, value in enumerate(idxs):
+            row.columns.values[value] = typeName[idx] + '繼續營業單位淨利（淨損）'
+    elif len(idxs == 1):
+        if row.columns.str.find('基本').all(-1):
+            assert(row.columns.str.find('稀釋').all(-1) == False)
+            row.columns.values[idxs[0]] = '稀釋繼續營業單位淨利（淨損）'
+        if row.columns.str.find('稀釋').all(-1):
+            assert(row.columns.str.find('基本').all(-1) == False)
+            row.columns.values[idxs[0]] = '基本繼續營業單位淨利（淨損）'
+    else:
+        assert(0)
+
+    return row
+            
 
 def getFundamental(stock, fnames):
 
     df1 = pd.DataFrame()
     df2 = pd.DataFrame()
     df3 = pd.DataFrame()
-
     for year in range(2013, datetime.datetime.now().year+1):
         for season in range(1,5):
             print('parsing stock: ' + stock + ' ' + str(year) + ' ' + str(season))
             time.sleep(random.randint(5,15))
             row1, row2, row3 = getStatement(stock, year, season)
+            row2 = row2Refine(row2)
             checkDuplicate(row1)
             checkDuplicate(row2)
             checkDuplicate(row3) 
@@ -114,3 +179,4 @@ def getFundamental(stock, fnames):
     df2.to_csv(fnames[1])
     df3.to_csv(fnames[2])
 
+#getFundamental('1101', ['1','2','3'])
