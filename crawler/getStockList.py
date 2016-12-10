@@ -60,6 +60,9 @@ def getSuspendedStockList(fname):
     # encoding
     r.encoding = 'big5'
 
+    print(r.text)
+    exit(0)
+
     # remove all '"'
     lines = r.text.replace('"','')
 

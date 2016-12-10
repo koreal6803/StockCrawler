@@ -68,43 +68,45 @@ def getStatement(s, year, season):
         print('**WARRN: fundamental not found for stock ' + s + ' year&season: ' + year + ' ' + season)
         return [empty, empty, empty]
 
-    try:
-        #
-        # refine the tables
-        #
-        df1 = refineDf(tables[1])
-        df2 = refineDf(tables[2])
-        df3 = refineDf(tables[3])
+    #try:
+    #
+    # refine the tables
+    #
+    df1 = refineDf(tables[1])
+    df2 = refineDf(tables[2])
+    df3 = refineDf(tables[3])
 
-        #
-        # find public date
-        #
+    #
+    # find public date
+    #
 
-        # obtain the sub-string of website
-        idx = req.text.find('核閱或查核日期')
-        dateStr = req.text[idx:idx+100]
+    # obtain the sub-string of website
+    idx = req.text.find('核閱或查核日期')
+    dateStr = req.text[idx:idx+100]
 
-        # obtain a smaller string of subStr
-        posYear = dateStr.find('-')
-        assert(posYear != -1)
-        dateStr = dateStr[posYear - 10: posYear + 10]
+    # obtain a smaller string of subStr
+    posYear = dateStr.find('-')
+    assert(posYear != -1)
+    dateStr = dateStr[posYear - 10: posYear + 10]
 
-        numbers = re.sub("\D", ' ', dateStr).split()
+    numbers = re.sub("\D", ' ', dateStr).split()
 
-        if int(numbers[0]) < 200:
-            numbers[0] = str(int(numbers[0]) + 1911)
+    if int(numbers[0]) < 200:
+        numbers[0] = str(int(numbers[0]) + 1911)
 
-        # build the date
-        dateStr = numbers[0] + '/' + numbers[1] + '/' + numbers[2]
+    # build the date
+    dateStr = numbers[0] + '/' + numbers[1] + '/' + numbers[2]
 
-        print('date: ' + dateStr)
+    print('date: ' + dateStr)
 
-        df1['date'] = pd.Series([dateStr],index=df1.index)
-        df2['date'] = pd.Series([dateStr],index=df2.index)
-        df3['date'] = pd.Series([dateStr],index=df3.index)
+    df1['date'] = pd.Series([dateStr],index=df1.index)
+    df2['date'] = pd.Series([dateStr],index=df2.index)
+    df3['date'] = pd.Series([dateStr],index=df3.index)
+    '''
     except e:
         print(e)
         print(req.text)
+    '''
     return [df1, df2, df3]
 
 def row2Refine(row):
@@ -148,7 +150,9 @@ def getFundamental(stock, fnames):
             rows = getStatement(stock, year, season)
             
             # if the statement cannot be found
-            if len(rows[0]) == 0:
+            if len(rows[0]) == 0 and year == 2013 and season == 1:
+                return
+            elif len(rows[0]) == 0:
                 continue
             
             # refine row2

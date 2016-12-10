@@ -76,7 +76,7 @@ def getFundamental2012(stock, fname, statement):
     df = pd.read_csv(fname, parse_dates=True, index_col=[0]) if os.path.exists(fname) else pd.DataFrame()
 
     # read all the time
-    for year in range(2008, 2009):
+    for year in range(2008, 2013):
         for season in range(1,5):
 
             if len(df) > 0 and len(df[(df['year'] == year)&(df['season'] == season)]) > 0:
@@ -101,8 +101,6 @@ def getFundamental2012(stock, fname, statement):
             df = df.append(row)
 
     df = df.sort_index()
-    print(df)
-    exit()
     df.to_csv(fname)
 
 def getComprehensiveIncome(stock, fname):

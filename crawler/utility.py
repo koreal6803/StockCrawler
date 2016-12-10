@@ -20,7 +20,7 @@ def refineDf(df): # todo: move this function to utility
     
     return dft
 
-def checkDuplicate(df): # todo: move this function to utility
+def checkDuplicate(df, saveOne=False): # todo: move this function to utility
     duplicateName = set()
     for idx, r in enumerate(df):
         for e in df.columns[idx+1:]:
@@ -30,5 +30,12 @@ def checkDuplicate(df): # todo: move this function to utility
     for r in duplicateName:
         print('**WARRN: duplicate column names')
         print(df[r])
+        if saveOne == True:
+            ss = df[r]
+            ss.columns=[i for i in range(len(ss.columns))]
+
         df = df.drop(r, axis=1)
+
+        if saveOne == True:
+            df[r] = ss[0]
     return df
