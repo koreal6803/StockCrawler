@@ -30,6 +30,7 @@ def get_historical_prices(symbol, start_date, end_date):
     url = 'http://real-chart.finance.yahoo.com/table.csv?%s' % params
     req = Request(url)
     resp = urlopen(req)
+    print('download success')
     content = str(resp.read().decode('utf-8').strip())
     daily_data = content.splitlines()
     hist_dict = []
@@ -47,6 +48,8 @@ def get_historical_prices(symbol, start_date, end_date):
             keys[6]: day_data[6]})
     return hist_dict
 
+def approxEqual(x, y, tolerance=0.001):
+    return abs(x-y) <= 0.5 * tolerance * (x + y)
 def updatePrice(stock, fname):
     try:
         df = pd.read_csv(fname, parse_dates=True, index_col=[0])
@@ -54,7 +57,7 @@ def updatePrice(stock, fname):
         assert(os.path.isfile(fname) == False)
         return False
 
-    lastDate = str(df.index[-1]).split()[0]
+    lastDate = str(df.index[-10]).split()[0]
     today = str(datetime.datetime.now()).split()[0]
     tomorrow = str(datetime.date.today() + datetime.timedelta(days=1)).split()[0]
 
@@ -70,11 +73,20 @@ def updatePrice(stock, fname):
     #    print('**ERROR: cannot obtain prices of the stock')
     dfnew = pd.DataFrame()
     for p in prices:
+        print(p['Date'])
         if not p['Date'] in df.index:
             obj = {key: [value] for key, value in p.items()}
             row = pd.DataFrame(obj)
             row.columns = [i.lower().replace(' ','_') for i in row.columns]
             dfnew = dfnew.append(row)
+        else:
+            adjClose = float(p['Adj Close'])
+            newf = adjClose/df['adj_close'][p['Date']]
+            print('adj_close modify factor:',newf)
+            if approxEqual(newf, 1):
+                df['adj_close'] *= newf
+
+    #print('find dividen factor',f)
 
     if len(dfnew) > 0:
         dfnew['date'] = pd.to_datetime(dfnew['date'])
@@ -96,7 +108,7 @@ def getPrice(stock, fname, startDay='2000-01-01'):
         print('stock ' + stock + ' is already obtained')
         return
 
-    todayStr = ''+str(datetime.datetime.now().year) + '-' + str(datetime.datetime.now().month) + '-' + str(datetime.datetime.now().day)
+    todayStr = str(datetime.datetime.now()).split()[0]
     df = pd.DataFrame()
     try:
         prices = get_historical_prices(stock+'.TW', startDay, todayStr)
